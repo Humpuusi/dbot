@@ -106,9 +106,11 @@ async def long (ctx, symbol: 'str', leverage: 'int'):
 @bot.command()
 async def short (ctx, symbol: 'str', leverage: 'int'):
     try:
+        symbol = f"{symbol.upper()}/USDT"
         market_price = fetch_market_price(symbol)
         if market_price:
             entry_price = market_price
+            open_positions[symbol] = {'entry_price': entry_price, 'leverage': leverage}
             await ctx.send(f"Opened short position for {symbol} with {leverage}x")
 # Log the action
             logging.info(f"Opened short position for {symbol} with {leverage}x")
@@ -148,6 +150,46 @@ async def close (ctx, symbol: 'str'):
     except Exception as e:
         await ctx.send(f"An error occured: {e}")
 # Close position
+
+# View open positions
+@bot.command()
+async def view(ctx):
+    try:
+        if open_positions:
+            embed = discord.Embed(title="Open Positions", color=discord.Color.default())
+            position_info = ""
+            for symbol, position in open_positions.items():
+                entry_price = position ['entry_price']
+                leverage = position['leverage']
+                market_price = fetch_market_price(symbol)
+                if market_price is not None:
+                    profit = ((market_price - entry_price) * leverage / entry_price) * 100
+                else:
+                    profit = None
+                position_info += f"Symbol: {symbol}, Entry Price: {entry_price}, Leverage: {leverage}, Profit:{profit}"
+
+# Set color based on position type
+                symbol_color = discord.Color.default()
+                if bot.command('long'):
+                    print("green")
+                    symbol_color = discord.Color.green()
+                elif bot.command('short'):
+                    print("red")
+                    symbol_color = discord.Color.red()
+
+                embed = discord.Embed(title="Open Positions", color=symbol_color)
+# Embed fields
+                embed.add_field(name="Symbol", value=symbol, inline=False)
+                embed.add_field(name="Entry Price ", value=entry_price, inline=True)
+                embed.add_field(name="Current Price", value=market_price, inline=True)
+                embed.add_field(name="Profit", value=f"{profit:.2f}%", inline=True)
+
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send("No open positions found.")
+    except Exception as e:
+        await ctx.send(f"An error occurred: {e}")
+
 
 bot.run(DISCORD_TOKEN)
 
