@@ -129,7 +129,10 @@ async def close (ctx, symbol: 'str'):
             if symbol in open_positions:
                 entry_price = open_positions[symbol]['entry_price']
                 leverage = open_positions[symbol]['leverage']
-                profit = ((market_price - entry_price) * leverage / entry_price) * 100 
+                if symbol.startswith('long'):
+                    profit = ((market_price - entry_price) * leverage / entry_price) * 100
+                else:
+                    profit = ((entry_price - market_price) * leverage / entry_price) * 100
 
                 embed = discord.Embed(title="Position Closed", color=0x00ff00)
                 embed.add_field(name="Symbol", value=symbol, inline=False)
